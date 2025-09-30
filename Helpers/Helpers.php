@@ -110,5 +110,63 @@
         }
     }
     
+  function fntAuthorization(array $arrHeaders)
+    {
 
+         if(empty($arrHeaders['Authorization']))
+         {
+            $response = array('status' => false, 'message' => 'Autenticación requerida');
+            jsonResponse($response, 401);
+            die();
+         }else{
+            $token = $arrHeaders['Authorization'];
+            $arrTokenBearer = explode(" ", $token);
+            
+            //Si el token no es Bearer
+            if($arrTokenBearer[0] != 'Bearer')
+            {
+                $response = array('status' => false, 'message' => 'Error de autenticación');
+                jsonResponse($response, 401);
+                die();
+            }else{
+                $token = $arrTokenBearer[1];
+            
+                // JWT decode token
+                try {
+                    $payload = JWT::decode($token, new Key(SECRET_KEY, 'HS512'));
+                    // dep($payload);
+                    // exit();
+                } catch (Exception $e) {
+                    // Handle the exception if the token is invalid or decoding fails
+                    $arrResponse = array('status' => false, 'message' => 'Token no es válido => '.$e->getMessage());
+                    jsonResponse($arrResponse, 401);
+                    die();
+                }
+            }
+
+           
+         }
+         
+    } //End function fntAuthorization    
+    
+    
+    //Metodos de autenticación
+    function generateToken($userId, $email, $rol = null) {
+        // Generate a token (this is a simple example, you might want to use a more secure method)
+        $token = bin2hex(random_bytes(16));
+        // Optionally, you can store the token in the database with an expiration time
+
+        $tokenData = [
+            'authToken' => $token,
+            'user_id' => $userId,
+            'email' => $email
+        ];
+
+        // Add role to token data if provided
+        if ($rol !== null) {
+            $tokenData['rol'] = $rol;
+        }
+
+        return $tokenData;
+    }
 ?>
