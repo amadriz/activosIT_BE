@@ -6,7 +6,7 @@
             parent::__construct();
         }
 
-        public function fetchActivos()
+    public function fetchActivos()
     {
         try
         {
@@ -256,113 +256,7 @@
             jsonResponse($response, 500);
         }
     }
-
-    public function fetchCategorias()
-    {
-        try
-        {
-
-            $method = $_SERVER['REQUEST_METHOD'];
-            $response = [];
-
-            if ($method == 'GET') {
-
-                $datos = $this->model->getCategorias();
-
-                if (empty($datos)) {
-                    $response = [
-                        "status" => false,
-                        "message" => "No hay registros en la base de datos",
-                    ];
-
-                    $code = 200;
-                    jsonResponse($response, $code);
-                    die();
-                } else {
-                    $response = array(
-                        "status" => true,
-                        "message" => "Datos encontrados",
-                        "data" => $datos,
-                    );
-                    $code = 200;
-                }
-
-            } else {
-                $response = [
-                    "status" => false,
-                    "message" => "Error al consultar solo se permiten metodos GET",
-                ];
-
-                $code = 200;
-
-                jsonResponse($response, $code);
-            }
-
-            $code = 200;
-
-            jsonResponse($response, $code);
-            die();
-
-        } catch (Exception $e) {
-            echo $e->getMessage();
-
-        }
-
-
-
-    }
-
-    public function fetchUbicaciones()
-    {
-        try
-        {
-
-            $method = $_SERVER['REQUEST_METHOD'];
-            $response = [];
-
-            if ($method == 'GET') {
-
-                $datos = $this->model->getUbicaciones();
-
-                if (empty($datos)) {
-                    $response = [
-                        "status" => false,
-                        "message" => "No hay registros en la base de datos",
-                    ];
-
-                    $code = 200;
-                    jsonResponse($response, $code);
-                    die();
-                } else {
-                    $response = array(
-                        "status" => true,
-                        "message" => "Datos encontrados",
-                        "data" => $datos,
-                    );
-                    $code = 200;
-                }
-
-            } else {
-                $response = [
-                    "status" => false,
-                    "message" => "Error al consultar solo se permiten metodos GET",
-                ];
-
-                $code = 200;
-
-                jsonResponse($response, $code);
-            }
-
-            $code = 200;
-
-            jsonResponse($response, $code);
-            die();
-
-        } catch (Exception $e) {
-            echo $e->getMessage();
-
-        }
-    }
+    
 
 }
 
