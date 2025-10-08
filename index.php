@@ -24,6 +24,12 @@
     header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
     header("Allow: GET, POST, OPTIONS, PUT, DELETE");
 
+    // Handle preflight OPTIONS request
+    if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+        // Return 200 OK for preflight requests
+        http_response_code(200);
+        exit();
+    }
 
     //funcion para cargar las vistas, controladores y modelos automaticamente
     $url = !empty($_GET['url']) ? $_GET['url'] : "home/home" ;

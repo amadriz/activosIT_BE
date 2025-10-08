@@ -13,9 +13,11 @@
         public function getActivos(){
             $sql = "SELECT
               a.id_activo,
+              a.codigo_activo,
               a.nombre_activo,
               c.nombre_categoria   AS categoria,
               m.nombre_marca       AS marca,
+              p.nombre_proveedor   AS proveedor,
               CONCAT_WS(' - ', u.edificio, u.piso, u.aula_oficina) AS ubicacion,
               e.nombre_estado      AS estado_activo,
               e.permite_prestamo   AS permite_prestamo,
@@ -29,24 +31,24 @@
             FROM activos a
             LEFT JOIN Categorias c     ON a.id_categoria = c.id_categoria
             LEFT JOIN Marca m          ON a.id_marca     = m.id_marca
+            LEFT JOIN Proveedores p    ON a.id_proveedor = p.id_proveedor
             LEFT JOIN Ubicaciones u    ON a.id_ubicacion = u.id_ubicacion
             LEFT JOIN Estado_Activos e ON a.id_estado    = e.id_estado
             WHERE 1 = 1";
             
-            
             $request = $this->select_all($sql);
             
-            
             return $request;
-
         }
 
-        public function insertActivos($nombre_activo, $id_categoria, $id_marca, $id_ubicacion, $id_estado, $modelo, $numero_serie, $fecha_adquisicion, $costo_adquisicion, $fecha_garantia_inicio, $fecha_garantia_fin, $especificaciones_tecnicas, $observaciones, $usuario_registro){
+        public function insertActivos($codigo_activo, $nombre_activo, $id_categoria, $id_marca, $id_proveedor, $id_ubicacion, $id_estado, $modelo, $numero_serie, $fecha_adquisicion, $costo_adquisicion, $fecha_garantia_inicio, $fecha_garantia_fin, $especificaciones_tecnicas, $observaciones, $usuario_registro){
             
             $sql = "INSERT INTO activos (
+                        codigo_activo,
                         nombre_activo,
                         id_categoria,
                         id_marca,
+                        id_proveedor,
                         id_ubicacion,
                         id_estado,
                         modelo,
@@ -59,12 +61,14 @@
                         observaciones,
                         usuario_registro,
                         fecha_registro
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             
             $arrData = [
+                $codigo_activo,
                 $nombre_activo,
                 $id_categoria,
                 $id_marca,
+                $id_proveedor,
                 $id_ubicacion,
                 $id_estado,
                 $modelo,
@@ -79,6 +83,53 @@
             ];
             
             $request = $this->insert($sql, $arrData);
+            
+            return $request;
+        }
+
+        public function updateActivos($id, $codigo_activo, $nombre_activo, $id_categoria, $id_marca, $id_proveedor, $id_ubicacion, $id_estado, $modelo, $numero_serie, $fecha_adquisicion, $costo_adquisicion, $fecha_garantia_inicio, $fecha_garantia_fin, $especificaciones_tecnicas, $observaciones, $usuario_registro){
+            
+            $sql = "UPDATE activos SET 
+                        codigo_activo = ?,
+                        nombre_activo = ?,
+                        id_categoria = ?,
+                        id_marca = ?,
+                        id_proveedor = ?,
+                        id_ubicacion = ?,
+                        id_estado = ?,
+                        modelo = ?,
+                        numero_serie = ?,
+                        fecha_adquisicion = ?,
+                        costo_adquisicion = ?,
+                        fecha_garantia_inicio = ?,
+                        fecha_garantia_fin = ?,
+                        especificaciones_tecnicas = ?,
+                        observaciones = ?,
+                        usuario_registro = ?,
+                        updated_at = NOW()
+                    WHERE id_activo = ?";
+            
+            $arrData = [
+                $codigo_activo,
+                $nombre_activo,
+                $id_categoria,
+                $id_marca,
+                $id_proveedor,
+                $id_ubicacion,
+                $id_estado,
+                $modelo,
+                $numero_serie,
+                $fecha_adquisicion,
+                $costo_adquisicion,
+                $fecha_garantia_inicio,
+                $fecha_garantia_fin,
+                $especificaciones_tecnicas,
+                $observaciones,
+                $usuario_registro,
+                $id
+            ];
+            
+            $request = $this->update($sql, $arrData);
             
             return $request;
         }
