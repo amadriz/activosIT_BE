@@ -10,7 +10,7 @@
         }
 
 
-        public function fetchAll()
+        public function fetchUsers()
         {
             try {
                 $method = $_SERVER['REQUEST_METHOD'];

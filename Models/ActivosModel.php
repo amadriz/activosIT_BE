@@ -25,6 +25,7 @@
               a.modelo,
               a.numero_serie,
               a.costo_adquisicion,
+              a.fecha_garantia_inicio,
               a.fecha_garantia_fin,
               a.fecha_registro,
               a.usuario_registro
