@@ -254,13 +254,13 @@
                     return;
                 }
 
-                // Verificar que el usuario aprobador existe y está activo
-                if (!$this->model->validarUsuarioActivo($usuario_aprobador)) {
+                // Verificar que el usuario aprobador existe, está activo y tiene rol admin
+                if (!$this->model->validarUsuarioAdmin($usuario_aprobador)) {
                     $response = [
                         "status" => false,
-                        "message" => "Usuario aprobador no encontrado o inactivo"
+                        "message" => "Usuario aprobador no encontrado, inactivo o no tiene permisos de administrador"
                     ];
-                    jsonResponse($response, 400);
+                    jsonResponse($response, 403); // Forbidden
                     return;
                 }
 

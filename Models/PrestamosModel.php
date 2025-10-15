@@ -78,6 +78,13 @@
             return !empty($request);
         }
 
+        public function validarUsuarioAdmin($id_usuario)
+        {
+            $sql = "SELECT id_usuario FROM usuario WHERE id_usuario = ? AND status = 1 AND rol = 'admin'";
+            $request = $this->select($sql, [$id_usuario]);
+            return !empty($request);
+        }
+
         public function validarActivoDisponible($id_activo)
         {
             $sql = "SELECT a.id_activo, ea.permite_prestamo 
