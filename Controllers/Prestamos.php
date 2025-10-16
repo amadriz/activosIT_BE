@@ -65,6 +65,16 @@
                 // Obtener y validar los datos del cuerpo de la solicitud
                 $input = json_decode(file_get_contents('php://input'), true);
 
+                // Debug: verificar qué datos estamos recibiendo
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $response = [
+                        "status" => false,
+                        "message" => "Error en el formato JSON: " . json_last_error_msg()
+                    ];
+                    jsonResponse($response, 400);
+                    return;
+                }
+
                 if (!isset($input['id_usuario'], $input['id_activo'], $input['fecha_inicio_solicitada'], $input['fecha_fin_solicitada'], $input['proposito'])) {
                     $response = [
                         "status" => false,
@@ -91,25 +101,45 @@
                     return;
                 }
 
-                // Validar formato de fechas
-                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio_solicitada) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin_solicitada)) {
+                // Validar formato de fechas y horas
+                // Acepta: YYYY-MM-DD HH:MM:SS o YYYY-MM-DD HH:MM
+                $patron_fecha = '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/';
+                
+                if (!preg_match($patron_fecha, $fecha_inicio_solicitada)) {
                     $response = [
                         "status" => false,
-                        "message" => "Formato de fecha inválido. Use YYYY-MM-DD"
+                        "message" => "Formato de fecha y hora de inicio inválido. Recibido: '" . $fecha_inicio_solicitada . "'. Use YYYY-MM-DD HH:MM:SS"
+                    ];
+                    jsonResponse($response, 400);
+                    return;
+                }
+                
+                if (!preg_match($patron_fecha, $fecha_fin_solicitada)) {
+                    $response = [
+                        "status" => false,
+                        "message" => "Formato de fecha y hora de fin inválido. Recibido: '" . $fecha_fin_solicitada . "'. Use YYYY-MM-DD HH:MM:SS"
                     ];
                     jsonResponse($response, 400);
                     return;
                 }
 
-                // Validar que las fechas sean válidas
-                $fecha_inicio = strtotime($fecha_inicio_solicitada);
-                $fecha_fin = strtotime($fecha_fin_solicitada);
-                $fecha_actual = strtotime(date('Y-m-d'));
-
-                if ($fecha_inicio === false || $fecha_fin === false) {
+                // Validar que las fechas sean válidas usando DateTime (más robusto)
+                try {
+                    // Forzar zona horaria para evitar problemas
+                    $timezone = new DateTimeZone('America/Costa_Rica'); // Ajusta según tu zona horaria
+                    
+                    $fecha_inicio_obj = new DateTime($fecha_inicio_solicitada, $timezone);
+                    $fecha_fin_obj = new DateTime($fecha_fin_solicitada, $timezone);
+                    $fecha_actual_obj = new DateTime('now', $timezone);
+                    
+                    $fecha_inicio = $fecha_inicio_obj->getTimestamp();
+                    $fecha_fin = $fecha_fin_obj->getTimestamp();
+                    $fecha_actual = $fecha_actual_obj->getTimestamp();
+                    
+                } catch (Exception $e) {
                     $response = [
                         "status" => false,
-                        "message" => "Fechas inválidas"
+                        "message" => "Fechas y horas inválidas. Error: " . $e->getMessage()
                     ];
                     jsonResponse($response, 400);
                     return;
@@ -119,17 +149,36 @@
                 if ($fecha_inicio > $fecha_fin) {
                     $response = [
                         "status" => false,
-                        "message" => "La fecha de inicio no puede ser mayor a la fecha de fin"
+                        "message" => "La fecha y hora de inicio no puede ser mayor a la fecha y hora de fin",
+                        "debug" => [
+                            "fecha_inicio_recibida" => $fecha_inicio_solicitada,
+                            "fecha_fin_recibida" => $fecha_fin_solicitada,
+                            "fecha_inicio_timestamp" => $fecha_inicio,
+                            "fecha_fin_timestamp" => $fecha_fin,
+                            "fecha_inicio_formateada" => date('Y-m-d H:i:s', $fecha_inicio),
+                            "fecha_fin_formateada" => date('Y-m-d H:i:s', $fecha_fin)
+                        ]
                     ];
                     jsonResponse($response, 400);
                     return;
                 }
 
-                // Validar que las fechas no sean en el pasado (opcional - se puede permitir para casos especiales)
-                if ($fecha_inicio < $fecha_actual) {
+                // Validar duración mínima de 1 hora
+                $duracion_horas = ($fecha_fin - $fecha_inicio) / 3600; // Convertir segundos a horas
+                if ($duracion_horas < 1) {
                     $response = [
                         "status" => false,
-                        "message" => "La fecha de inicio no puede ser anterior a hoy"
+                        "message" => "La duración mínima del préstamo debe ser de 1 hora"
+                    ];
+                    jsonResponse($response, 400);
+                    return;
+                }
+
+                // Validar que las fechas no sean en el pasado (con tolerancia de 1 hora)
+                if ($fecha_inicio < ($fecha_actual - 3600)) {
+                    $response = [
+                        "status" => false,
+                        "message" => "La fecha y hora de inicio no puede ser anterior a la hora actual"
                     ];
                     jsonResponse($response, 400);
                     return;
@@ -553,6 +602,46 @@
                 ];
                 jsonResponse($response, 500);
             }
+        }
+
+        public function estado_Prestamo(){
+            try {
+                $method = $_SERVER['REQUEST_METHOD'];
+                
+                if ($method !== 'GET') {
+                    $response = [
+                        "status" => false,
+                        "message" => "Error: solo se permiten métodos GET"
+                    ];
+                    jsonResponse($response, 405);
+                    return;
+                }
+
+                $datos = $this->model->getEstado_Prestamo();
+
+                if (empty($datos)) {
+                    $response = [
+                        "status" => false,
+                        "message" => "No hay estados de préstamos registrados"
+                    ];
+                } else {
+                    $response = [
+                        "status" => true,
+                        "message" => "Estados de préstamos encontrados",
+                        "data" => $datos
+                    ];
+                }
+
+                jsonResponse($response, 200);
+
+            } catch (Exception $e) {
+                $response = [
+                    "status" => false,
+                    "message" => "Error interno del servidor: " . $e->getMessage()
+                ];
+                jsonResponse($response, 500);
+            }
+            
         }
 
 

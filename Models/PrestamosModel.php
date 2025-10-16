@@ -209,6 +209,13 @@
             return $request;
         }
 
+        public function getEstado_Prestamo()
+        {
+            $sql = "SELECT * FROM estado_prestamo";
+            $request = $this->select_all($sql);
+            return $request;
+        }
+
     }
 
 ?>
