@@ -42,18 +42,63 @@
                 p.observaciones_aprobacion,
                 p.observaciones_devolucion,
                 
+                -- Cálculo de tiempo transcurrido en horas y días
                 CASE
-                    WHEN p.fecha_entrega IS NOT NULL THEN DATEDIFF(COALESCE(p.fecha_devolucion, NOW()), p.fecha_entrega)
-                    WHEN p.fecha_inicio_solicitada IS NOT NULL THEN DATEDIFF(COALESCE(p.fecha_devolucion, NOW()), p.fecha_inicio_solicitada)
+                    WHEN p.fecha_entrega IS NOT NULL THEN 
+                        TIMESTAMPDIFF(HOUR, p.fecha_entrega, COALESCE(p.fecha_devolucion, NOW()))
+                    WHEN p.fecha_inicio_solicitada IS NOT NULL THEN 
+                        TIMESTAMPDIFF(HOUR, p.fecha_inicio_solicitada, COALESCE(p.fecha_devolucion, NOW()))
                     ELSE NULL
-                END AS dias_transcurridos,
+                END AS horas_transcurridas,
                 
+                -- Tiempo transcurrido en formato legible
+                CASE
+                    WHEN p.fecha_entrega IS NOT NULL THEN 
+                        CONCAT(
+                            FLOOR(TIMESTAMPDIFF(HOUR, p.fecha_entrega, COALESCE(p.fecha_devolucion, NOW())) / 24), ' días, ',
+                            MOD(TIMESTAMPDIFF(HOUR, p.fecha_entrega, COALESCE(p.fecha_devolucion, NOW())), 24), ' horas'
+                        )
+                    WHEN p.fecha_inicio_solicitada IS NOT NULL THEN 
+                        CONCAT(
+                            FLOOR(TIMESTAMPDIFF(HOUR, p.fecha_inicio_solicitada, COALESCE(p.fecha_devolucion, NOW())) / 24), ' días, ',
+                            MOD(TIMESTAMPDIFF(HOUR, p.fecha_inicio_solicitada, COALESCE(p.fecha_devolucion, NOW())), 24), ' horas'
+                        )
+                    ELSE NULL
+                END AS tiempo_transcurrido,
+                
+                -- Duración planificada del préstamo en horas
+                CASE
+                    WHEN p.fecha_inicio_solicitada IS NOT NULL AND p.fecha_fin_solicitada IS NOT NULL THEN
+                        TIMESTAMPDIFF(HOUR, p.fecha_inicio_solicitada, p.fecha_fin_solicitada)
+                    ELSE NULL
+                END AS duracion_planificada_horas,
+                
+                -- Estado de vencimiento más preciso
                 CASE
                     WHEN p.fecha_fin_solicitada IS NOT NULL
                          AND p.fecha_fin_solicitada < NOW()
-                         AND (p.fecha_devolucion IS NULL OR p.id_estado_prestamo <> 4) THEN 'Vencido'
+                         AND (p.fecha_devolucion IS NULL OR p.id_estado_prestamo NOT IN (4, 5)) THEN 'Vencido'
+                    WHEN p.fecha_fin_solicitada IS NOT NULL
+                         AND TIMESTAMPDIFF(HOUR, NOW(), p.fecha_fin_solicitada) <= 2
+                         AND (p.fecha_devolucion IS NULL OR p.id_estado_prestamo NOT IN (4, 5)) THEN 'Próximo a vencer'
                     ELSE 'OK'
-                END AS estado_vencimiento
+                END AS estado_vencimiento,
+                
+                -- Tiempo restante hasta vencimiento
+                CASE
+                    WHEN p.fecha_fin_solicitada IS NOT NULL AND p.fecha_fin_solicitada > NOW() THEN
+                        CONCAT(
+                            FLOOR(TIMESTAMPDIFF(HOUR, NOW(), p.fecha_fin_solicitada) / 24), ' días, ',
+                            MOD(TIMESTAMPDIFF(HOUR, NOW(), p.fecha_fin_solicitada), 24), ' horas restantes'
+                        )
+                    WHEN p.fecha_fin_solicitada IS NOT NULL AND p.fecha_fin_solicitada < NOW() THEN
+                        CONCAT(
+                            'Vencido hace ',
+                            FLOOR(TIMESTAMPDIFF(HOUR, p.fecha_fin_solicitada, NOW()) / 24), ' días, ',
+                            MOD(TIMESTAMPDIFF(HOUR, p.fecha_fin_solicitada, NOW()), 24), ' horas'
+                        )
+                    ELSE 'Sin fecha límite'
+                END AS tiempo_restante
 
             FROM prestamo p
             LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo
@@ -213,6 +258,13 @@
         {
             $sql = "SELECT * FROM estado_prestamo";
             $request = $this->select_all($sql);
+            return $request;
+        }
+
+        public function eliminarPrestamo($id_prestamo)
+        {
+            $sql = "DELETE FROM prestamo WHERE id_prestamo = ?";
+            $request = $this->delete($sql, [$id_prestamo]);
             return $request;
         }
 

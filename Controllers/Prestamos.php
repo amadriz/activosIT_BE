@@ -644,6 +644,66 @@
             
         }
 
+        public function eliminarPrestamo($id_prestamo = null)
+        {
+            try {
+                $method = $_SERVER['REQUEST_METHOD'];
+
+                if ($method !== 'DELETE') {
+                    $response = [
+                        "status" => false,
+                        "message" => "Error: solo se permiten métodos DELETE"
+                    ];
+                    jsonResponse($response, 405);
+                    return;
+                }
+
+                if (is_null($id_prestamo)) {
+                    $response = [
+                        "status" => false,
+                        "message" => "ID de préstamo no proporcionado"
+                    ];
+                    jsonResponse($response, 400);
+                    return;
+                }
+
+                // Verificar que el préstamo existe
+                $prestamo = $this->model->obtenerPrestamoPorId($id_prestamo);
+                if (empty($prestamo)) {
+                    $response = [
+                        "status" => false,
+                        "message" => "Préstamo no encontrado"
+                    ];
+                    jsonResponse($response, 404);
+                    return;
+                }
+
+                // Procesar la eliminación del préstamo
+                $resultado = $this->model->eliminarPrestamo($id_prestamo);
+
+                if ($resultado) {
+                    $response = [
+                        "status" => true,
+                        "message" => "Préstamo eliminado exitosamente"
+                    ];
+                    jsonResponse($response, 200);
+                } else {
+                    $response = [
+                        "status" => false,
+                        "message" => "Error al procesar la eliminación del préstamo"
+                    ];
+                    jsonResponse($response, 500);
+                }
+
+            } catch (Exception $e) {
+                $response = [
+                    "status" => false,
+                    "message" => "Error interno del servidor: " . $e->getMessage()
+                ];
+                jsonResponse($response, 500);
+            }
+        }
+
 
 
     } //clase
