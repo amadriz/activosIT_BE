@@ -188,14 +188,115 @@
             jsonResponse($response, $code);
             die();
 
-        } catch (Exception $e) {
-            $response = [
-                "status" => false,
-                "message" => "Error interno del servidor: " . $e->getMessage(),
-            ];
-            jsonResponse($response, 500);
+            } catch (Exception $e) {
+                $response = [
+                    "status" => false,
+                    "message" => "Error interno del servidor: " . $e->getMessage(),
+                ];
+                jsonResponse($response, 500);
+            }
         }
-    }
+
+        // add method to update category
+        public function actualizarCategoria($params = null)
+        {
+            try {
+                $method = $_SERVER['REQUEST_METHOD'];
+                $response = [];
+
+                if ($method == 'PUT') {
+                    // Get category ID from URL parameter
+                    $id = null;
+                    if (!empty($params)) {
+                        $id = intval($params);
+                    }
+
+                    if (!$id || $id <= 0) {
+                        $response = [
+                            "status" => false,
+                            "message" => "ID no válido. Debe proporcionar un ID positivo en la URL",
+                        ];
+                        jsonResponse($response, 400);
+                        die();
+                    }
+
+                    $json = file_get_contents('php://input');
+                    $datos = json_decode($json, true);
+
+                    // Validate JSON data
+                    if (empty($datos)) {
+                        $response = [
+                            "status" => false,
+                            "message" => "No se recibieron datos válidos en el cuerpo de la solicitud",
+                        ];
+                        jsonResponse($response, 400);
+                        die();
+                    }
+
+                    // Validate required fields
+                    if (empty($datos['nombre_categoria'])) {
+                        $response = [
+                            "status" => false,
+                            "message" => "El nombre de la categoría es requerido",
+                        ];
+                        jsonResponse($response, 400);
+                        die();
+                    }
+
+                    if (empty($datos['descripcion']) ) {
+                        $response = [
+                            "status" => false,
+                            "message" => "La descripción es requerida",
+                        ];
+                        jsonResponse($response, 400);
+                        die();
+                    }
+
+                    if (!isset($datos['estado'])) {
+                        $response = [
+                            "status" => false,
+                            "message" => "El estado es requerido",
+                        ];
+                        jsonResponse($response, 400);
+                        die();
+                    }
+
+                    $strNombre = ucwords(strClean($datos['nombre_categoria']));
+                    $strDescripcion = strClean($datos['descripcion']);
+                    $strEstado = strClean($datos['estado']);
+
+                    $result = $this->model->updateCategoria($id, $strNombre, $strDescripcion, $strEstado);
+
+                    if ($result) {
+                        $response = [
+                            "status" => true,
+                            "message" => "Categoría actualizada exitosamente",
+                            "data" => $result,
+                        ];
+                    } else {
+                        $response = [
+                            "status" => false,
+                            "message" => "Error al actualizar categoría o no se realizaron cambios",
+                        ];
+                    }
+
+                    $code = 200;
+
+                } else {
+                    $response = [
+                        "status" => false,
+                        "message" => "Error al actualizar categoría, solo se permiten métodos PUT",
+                    ];
+                    $code = 200;
+                }
+
+                jsonResponse($response, $code);
+                die();
+
+            } catch (Exception $e) {
+                echo $e->getMessage();
+            }
+        }
 
     }// End class Categorias
 
