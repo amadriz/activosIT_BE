@@ -41,6 +41,25 @@
             return $request_delete;
         }
 
+        public function updateCategoria(int $idCategoria, string $strNombre, string $strDescripcion, string $strEstado){
+            $this->idCategoria = $idCategoria;
+            $this->strNombre = $strNombre;
+            $this->strDescripcion = $strDescripcion;
+            $this->strEstado = $strEstado;
+
+            $sql = "UPDATE categorias SET nombre_categoria = ?, descripcion = ?, estado = ? WHERE id_categoria = ?";
+            $arrData = array($this->strNombre, $this->strDescripcion, $this->strEstado, $this->idCategoria);
+            $request_update = $this->update($sql, $arrData);
+            return $request_update;
+        }
+
+        public function getCategoriaById($id_categoria)
+        {
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, estado FROM categorias WHERE id_categoria = ?";
+            $request = $this->select($sql, [$id_categoria]);
+            return $request;
+        }
+
     }
 
 ?>

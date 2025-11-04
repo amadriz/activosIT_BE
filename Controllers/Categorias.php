@@ -90,7 +90,7 @@
                         die();
                     }
 
-                    if(!isset($datos['estado']) || !testString($datos['estado'])) {
+                    if(!isset($datos['estado']) || empty($datos['estado'])) {
                         $response = [
                             "status" => false,
                             "message" => "El estado es requerido",
@@ -99,9 +99,26 @@
                         die();
                     }
 
+                    // Validar que el estado sea válido (activo/inactivo o 1/0)
+                    $estadosValidos = ['activo', 'inactivo', '1', '0', 1, 0, true, false];
+                    if(!in_array($datos['estado'], $estadosValidos, true)) {
+                        $response = [
+                            "status" => false,
+                            "message" => "El estado debe ser 'activo', 'inactivo', 1 o 0",
+                        ];
+                        jsonResponse($response, 200);
+                        die();
+                    }
+
                     $strNombre = ucwords(strClean($datos['nombre_categoria']));
                     $strDescripcion = strClean($datos['descripcion']);
-                    $intEstado = intval($datos['estado']);
+                    
+                    // Convertir estado a entero (activo = 1, inactivo = 0)
+                    if($datos['estado'] === 'activo' || $datos['estado'] === '1' || $datos['estado'] === 1 || $datos['estado'] === true) {
+                        $intEstado = 1;
+                    } else {
+                        $intEstado = 0;
+                    }
 
                     $result = $this->model->insertCategoria($strNombre, $strDescripcion, $intEstado);
 
@@ -153,22 +170,33 @@
                     }
 
                 if ($id && $id > 0) {
-                    // Call the model to delete the category
-                    $deleted = $this->model->deleteCategoria($id);
-
-                    if ($deleted) {
-                        $response = [
-                            "status" => true,
-                            "message" => "Categoría eliminada correctamente",
-                            "id" => $id
-                        ];
-                        $code = 200;
-                    } else {
+                    // Verificar que la categoría existe antes de eliminar
+                    $categoriaExists = $this->model->getCategoriaById($id);
+                    
+                    if (empty($categoriaExists)) {
                         $response = [
                             "status" => false,
-                            "message" => "Error al eliminar el Activo o el registro no existe",
+                            "message" => "La categoría con ID {$id} no existe",
                         ];
                         $code = 404;
+                    } else {
+                        // Call the model to delete the category
+                        $deleted = $this->model->deleteCategoria($id);
+
+                        if ($deleted) {
+                            $response = [
+                                "status" => true,
+                                "message" => "Categoría eliminada correctamente",
+                                "id" => $id
+                            ];
+                            $code = 200;
+                        } else {
+                            $response = [
+                                "status" => false,
+                                "message" => "Error al eliminar la categoría",
+                            ];
+                            $code = 500;
+                        }
                     }
                 } else {
                     $response = [
@@ -188,14 +216,112 @@
             jsonResponse($response, $code);
             die();
 
-        } catch (Exception $e) {
-            $response = [
-                "status" => false,
-                "message" => "Error interno del servidor: " . $e->getMessage(),
-            ];
-            jsonResponse($response, 500);
+            } catch (Exception $e) {
+                $response = [
+                    "status" => false,
+                    "message" => "Error interno del servidor: " . $e->getMessage(),
+                ];
+                jsonResponse($response, 500);
+            }
         }
-    }
+
+        public function actualizarCategoria($params = null)
+        {
+            try {
+                $method = $_SERVER['REQUEST_METHOD'];
+                $response = [];
+
+                if ($method == 'PUT') {
+
+                    // Validar que se proporcione el ID en la URL
+                    if (empty($params) || !is_numeric($params)) {
+                        $response = [
+                            "status" => false,
+                            "message" => "El ID de la categoría es requerido en la URL y debe ser numérico",
+                        ];
+                        jsonResponse($response, 400);
+                        die();
+                    }
+
+                    // Verificar que la categoría existe antes de actualizar
+                    $categoriaExists = $this->model->getCategoriaById(intval($params));
+                    
+                    if (empty($categoriaExists)) {
+                        $response = [
+                            "status" => false,
+                            "message" => "La categoría con ID {$params} no existe",
+                        ];
+                        jsonResponse($response, 404);
+                        die();
+                    }
+
+                    $json = file_get_contents('php://input');
+                    $datos = json_decode($json, true);
+
+                    if(empty($datos['nombre_categoria']) || !testString($datos['nombre_categoria'])) {
+                        $response = [
+                            "status" => false,
+                            "message" => "El nombre de la categoría es requerido",
+                        ];
+                        jsonResponse($response, 200);
+                        die();
+                    }
+
+                    if(empty($datos['descripcion'])) {
+                        $response = [
+                            "status" => false,
+                            "message" => "La descripción es requerida",
+                        ];
+                        jsonResponse($response, 200);
+                        die();
+                    }
+
+                    if(!isset($datos['estado'])) {
+                        $response = [
+                            "status" => false,
+                            "message" => "El estado es requerido",
+                        ];
+                        jsonResponse($response, 200);
+                        die();
+                    }
+                   
+                    $idCategoria = intval($params);
+                    $strNombre = ucwords(strClean($datos['nombre_categoria']));
+                    $strDescripcion = strClean($datos['descripcion']);
+                    $strEstado = strClean($datos['estado']);                   
+                    
+
+                    $result = $this->model->updateCategoria($idCategoria, $strNombre, $strDescripcion, $strEstado);
+
+                    if ($result) {
+                        $response = [
+                            "status" => true,
+                            "message" => "Categoría actualizada exitosamente",
+                        ];
+                    } else {
+                        $response = [
+                            "status" => false,
+                            "message" => "Error al actualizar categoría",
+                        ];
+                    }
+
+                    $code = 200;
+
+                } else {
+                    $response = [
+                        "status" => false,
+                        "message" => "Error al actualizar categoría, solo se permiten métodos PUT",
+                    ];
+                    $code = 200;
+                }
+
+                jsonResponse($response, $code);
+                die();
+
+            } catch (Exception $e) {
+                echo $e->getMessage();
+            }
+        } // End function actualizarCategoria
 
     }// End class Categorias
 

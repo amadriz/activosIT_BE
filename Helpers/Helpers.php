@@ -82,6 +82,21 @@
         }
     }
 
+    //Function to validate alphanumeric strings (letters, numbers, spaces, accents)
+    function testAlphanumeric(string $texto)
+    {
+        $patron = "/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9 .-]*$/";
+        
+        if(preg_match($patron, $texto))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     function testEntero(int $numero)
     {
         $patron = "/^[0-9]*$/";
