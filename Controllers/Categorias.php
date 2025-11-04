@@ -224,6 +224,14 @@
                 jsonResponse($response, 500);
             }
         }
+            } catch (Exception $e) {
+                $response = [
+                    "status" => false,
+                    "message" => "Error interno del servidor: " . $e->getMessage(),
+                ];
+                jsonResponse($response, 500);
+            }
+        }
 
         public function actualizarCategoria($params = null)
         {
