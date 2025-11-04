@@ -169,61 +169,53 @@
                         $id = intval($params);
                     }
 
-                if ($id && $id > 0) {
-                    // Verificar que la categoría existe antes de eliminar
-                    $categoriaExists = $this->model->getCategoriaById($id);
-                    
-                    if (empty($categoriaExists)) {
-                        $response = [
-                            "status" => false,
-                            "message" => "La categoría con ID {$id} no existe",
-                        ];
-                        $code = 404;
-                    } else {
-                        // Call the model to delete the category
-                        $deleted = $this->model->deleteCategoria($id);
-
-                        if ($deleted) {
-                            $response = [
-                                "status" => true,
-                                "message" => "Categoría eliminada correctamente",
-                                "id" => $id
-                            ];
-                            $code = 200;
-                        } else {
+                    if ($id && $id > 0) {
+                        // Verificar que la categoría existe antes de eliminar
+                        $categoriaExists = $this->model->getCategoriaById($id);
+                        
+                        if (empty($categoriaExists)) {
                             $response = [
                                 "status" => false,
-                                "message" => "Error al eliminar la categoría",
+                                "message" => "La categoría con ID {$id} no existe",
                             ];
-                            $code = 500;
+                            $code = 404;
+                        } else {
+                            // Call the model to delete the category
+                            $deleted = $this->model->deleteCategoria($id);
+
+                            if ($deleted) {
+                                $response = [
+                                    "status" => true,
+                                    "message" => "Categoría eliminada correctamente",
+                                    "id" => $id
+                                ];
+                                $code = 200;
+                            } else {
+                                $response = [
+                                    "status" => false,
+                                    "message" => "Error al eliminar la categoría",
+                                ];
+                                $code = 500;
+                            }
                         }
+                    } else {
+                        $response = [
+                            "status" => false,
+                            "message" => "ID no válido. Debe proporcionar un ID positivo en la URL",
+                        ];
+                        $code = 400;
                     }
                 } else {
                     $response = [
                         "status" => false,
-                        "message" => "ID no válido. Debe proporcionar un ID positivo en la URL",
+                        "message" => "Método no permitido, solo se permite DELETE",
                     ];
-                    $code = 400;
+                    $code = 405;
                 }
-            } else {
-                $response = [
-                    "status" => false,
-                    "message" => "Método no permitido, solo se permite DELETE",
-                ];
-                $code = 405;
-            }
 
-            jsonResponse($response, $code);
-            die();
+                jsonResponse($response, $code);
+                die();
 
-            } catch (Exception $e) {
-                $response = [
-                    "status" => false,
-                    "message" => "Error interno del servidor: " . $e->getMessage(),
-                ];
-                jsonResponse($response, 500);
-            }
-        }
             } catch (Exception $e) {
                 $response = [
                     "status" => false,
