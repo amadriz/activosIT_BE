@@ -34,10 +34,31 @@
         public function deleteCategoria(int $idCategoria){
             $this->idCategoria = $idCategoria;
 
-            $sql = "DELETE FROM categorias WHERE id_categoria = ?";
-            $arrData = array($this->idCategoria);
-            $request_delete = $this->delete($sql, $arrData);
-            return $request_delete;
+            try {
+                // First check if category exists
+                $exists = $this->getCategoriaById($idCategoria);
+                if (empty($exists)) {
+                    return false;
+                }
+
+                // Check if category is being used by other tables (activos table)
+                $sqlCheck = "SELECT COUNT(*) as count FROM activos WHERE id_categoria = ?";
+                $checkResult = $this->select($sqlCheck, [$this->idCategoria]);
+                
+                if ($checkResult && isset($checkResult['count']) && $checkResult['count'] > 0) {
+                    // Category is being used, cannot delete
+                    return "FOREIGN_KEY_CONSTRAINT";
+                }
+
+                $sql = "DELETE FROM categorias WHERE id_categoria = ?";
+                $arrData = array($this->idCategoria);
+                $request_delete = $this->delete($sql, $arrData);
+                return $request_delete;
+                
+            } catch (Exception $e) {
+                // Return error message for debugging
+                return "ERROR: " . $e->getMessage();
+            }
         }
 
         public function updateCategoria(int $idCategoria, string $strNombre, string $strDescripcion){
@@ -53,7 +74,7 @@
 
         public function getCategoriaById($id_categoria)
         {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion FROM categorias WHERE id_categoria = ?";
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion, estado FROM categorias WHERE id_categoria = ?";
             $request = $this->select($sql, [$id_categoria]);
             return $request;
         }

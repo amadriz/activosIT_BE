@@ -156,17 +156,30 @@
                             // Call the model to delete the category
                             $deleted = $this->model->deleteCategoria($id);
 
-                            if ($deleted) {
+                            if ($deleted === true) {
                                 $response = [
                                     "status" => true,
                                     "message" => "Categoría eliminada correctamente",
                                     "id" => $id
                                 ];
                                 $code = 200;
+                            } else if ($deleted === "FOREIGN_KEY_CONSTRAINT") {
+                                $response = [
+                                    "status" => false,
+                                    "message" => "No se puede eliminar la categoría porque está siendo utilizada por uno o más activos",
+                                ];
+                                $code = 409; // Conflict
+                            } else if (is_string($deleted) && strpos($deleted, "ERROR:") === 0) {
+                                $response = [
+                                    "status" => false,
+                                    "message" => "Error en la base de datos: " . substr($deleted, 7),
+                                ];
+                                $code = 500;
                             } else {
                                 $response = [
                                     "status" => false,
                                     "message" => "Error al eliminar la categoría",
+                                    "debug" => $deleted
                                 ];
                                 $code = 500;
                             }
@@ -231,7 +244,7 @@
                     $json = file_get_contents('php://input');
                     $datos = json_decode($json, true);
 
-                    if(empty($datos['nombre_categoria']) || !testString($datos['nombre_categoria'])) {
+                    if(empty($datos['nombre_categoria'])) {
                         $response = [
                             "status" => false,
                             "message" => "El nombre de la categoría es requerido",
