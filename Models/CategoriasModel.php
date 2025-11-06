@@ -11,7 +11,7 @@
         }
 
         public function getCategorias(){
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion, estado FROM categorias WHERE 1 = 1";
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion FROM categorias WHERE 1 = 1";
             
             
             $request = $this->select_all($sql);
@@ -21,13 +21,12 @@
 
         }
 
-        public function insertCategoria($strNombre, $strDescripcion, $intEstado){
+        public function insertCategoria($strNombre, $strDescripcion){
             $this->strNombre = $strNombre;
             $this->strDescripcion = $strDescripcion;
-            $this->intEstado = $intEstado;
 
-            $sql = "INSERT INTO categorias (nombre_categoria, descripcion, estado) VALUES (?, ?, ?)";
-            $arrData = array($this->strNombre, $this->strDescripcion, $this->intEstado);
+            $sql = "INSERT INTO categorias (nombre_categoria, descripcion) VALUES (?, ?, ?)";
+            $arrData = array($this->strNombre, $this->strDescripcion);
             $request_insert = $this->insert($sql, $arrData);
             return $request_insert;
         }
@@ -41,21 +40,20 @@
             return $request_delete;
         }
 
-        public function updateCategoria(int $idCategoria, string $strNombre, string $strDescripcion, string $strEstado){
+        public function updateCategoria(int $idCategoria, string $strNombre, string $strDescripcion){
             $this->idCategoria = $idCategoria;
             $this->strNombre = $strNombre;
             $this->strDescripcion = $strDescripcion;
-            $this->strEstado = $strEstado;
 
-            $sql = "UPDATE categorias SET nombre_categoria = ?, descripcion = ?, estado = ? WHERE id_categoria = ?";
-            $arrData = array($this->strNombre, $this->strDescripcion, $this->strEstado, $this->idCategoria);
+            $sql = "UPDATE categorias SET nombre_categoria = ?, descripcion = ? WHERE id_categoria = ?";
+            $arrData = array($this->strNombre, $this->strDescripcion, $this->idCategoria);
             $request_update = $this->update($sql, $arrData);
             return $request_update;
         }
 
         public function getCategoriaById($id_categoria)
         {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion, estado FROM categorias WHERE id_categoria = ?";
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion FROM categorias WHERE id_categoria = ?";
             $request = $this->select($sql, [$id_categoria]);
             return $request;
         }

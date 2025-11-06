@@ -90,37 +90,10 @@
                         die();
                     }
 
-                    if(!isset($datos['estado']) || empty($datos['estado'])) {
-                        $response = [
-                            "status" => false,
-                            "message" => "El estado es requerido",
-                        ];
-                        jsonResponse($response, 200);
-                        die();
-                    }
-
-                    // Validar que el estado sea válido (activo/inactivo o 1/0)
-                    $estadosValidos = ['activo', 'inactivo', '1', '0', 1, 0, true, false];
-                    if(!in_array($datos['estado'], $estadosValidos, true)) {
-                        $response = [
-                            "status" => false,
-                            "message" => "El estado debe ser 'activo', 'inactivo', 1 o 0",
-                        ];
-                        jsonResponse($response, 200);
-                        die();
-                    }
-
                     $strNombre = ucwords(strClean($datos['nombre_categoria']));
                     $strDescripcion = strClean($datos['descripcion']);
-                    
-                    // Convertir estado a entero (activo = 1, inactivo = 0)
-                    if($datos['estado'] === 'activo' || $datos['estado'] === '1' || $datos['estado'] === 1 || $datos['estado'] === true) {
-                        $intEstado = 1;
-                    } else {
-                        $intEstado = 0;
-                    }
 
-                    $result = $this->model->insertCategoria($strNombre, $strDescripcion, $intEstado);
+                    $result = $this->model->insertCategoria($strNombre, $strDescripcion);
 
                     // show data from result for debugging
                     if($result) {
@@ -276,22 +249,12 @@
                         die();
                     }
 
-                    if(!isset($datos['estado'])) {
-                        $response = [
-                            "status" => false,
-                            "message" => "El estado es requerido",
-                        ];
-                        jsonResponse($response, 200);
-                        die();
-                    }
-                   
+                    
                     $idCategoria = intval($params);
                     $strNombre = ucwords(strClean($datos['nombre_categoria']));
                     $strDescripcion = strClean($datos['descripcion']);
-                    $strEstado = strClean($datos['estado']);                   
-                    
-
-                    $result = $this->model->updateCategoria($idCategoria, $strNombre, $strDescripcion, $strEstado);
+                                     
+                    $result = $this->model->updateCategoria($idCategoria, $strNombre, $strDescripcion);
 
                     if ($result) {
                         $response = [
