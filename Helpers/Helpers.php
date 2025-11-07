@@ -70,7 +70,7 @@
     //Create function regular expression
     function testString(string $nombre)
     {
-        $patron = "/^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]*$/";
+        $patron = "/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9 .,-_@#$%&*+!?()]*$/";
         
         if(preg_match($patron, $nombre))
         {

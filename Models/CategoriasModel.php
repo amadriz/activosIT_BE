@@ -25,7 +25,7 @@
             $this->strNombre = $strNombre;
             $this->strDescripcion = $strDescripcion;
 
-            $sql = "INSERT INTO categorias (nombre_categoria, descripcion) VALUES (?, ?, ?)";
+            $sql = "INSERT INTO categorias (nombre_categoria, descripcion) VALUES (?, ?)";
             $arrData = array($this->strNombre, $this->strDescripcion);
             $request_insert = $this->insert($sql, $arrData);
             return $request_insert;
