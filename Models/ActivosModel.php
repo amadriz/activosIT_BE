@@ -30,11 +30,11 @@
               a.fecha_registro,
               a.usuario_registro
             FROM activos a
-            LEFT JOIN Categorias c     ON a.id_categoria = c.id_categoria
-            LEFT JOIN Marca m          ON a.id_marca     = m.id_marca
-            LEFT JOIN Proveedores p    ON a.id_proveedor = p.id_proveedor
-            LEFT JOIN Ubicaciones u    ON a.id_ubicacion = u.id_ubicacion
-            LEFT JOIN Estado_Activos e ON a.id_estado    = e.id_estado
+            LEFT JOIN categorias c     ON a.id_categoria = c.id_categoria
+            LEFT JOIN marca m          ON a.id_marca     = m.id_marca
+            LEFT JOIN proveedores p    ON a.id_proveedor = p.id_proveedor
+            LEFT JOIN ubicaciones u    ON a.id_ubicacion = u.id_ubicacion
+            LEFT JOIN estado_activos e ON a.id_estado    = e.id_estado
             WHERE 1 = 1";
             
             $request = $this->select_all($sql);

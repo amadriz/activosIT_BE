@@ -11,14 +11,22 @@
         }
 
         public function getCategorias(){
+            // Let's test with a simpler query first
+            $sql = "SHOW TABLES LIKE 'categorias'";
+            $testResult = $this->select_all($sql);
+            
+            if (is_string($testResult) && strpos($testResult, 'Error:') === 0) {
+                return "TABLE_CHECK_ERROR: " . $testResult;
+            }
+            
+            if (empty($testResult)) {
+                return "TABLE_NOT_FOUND: The categorias table does not exist";
+            }
+            
+            // Now try the actual query
             $sql = "SELECT id_categoria, nombre_categoria, descripcion FROM categorias WHERE 1 = 1";
-            
-            
             $request = $this->select_all($sql);
-            
-            
             return $request;
-
         }
 
         public function insertCategoria($strNombre, $strDescripcion){
@@ -74,7 +82,7 @@
 
         public function getCategoriaById($id_categoria)
         {
-            $sql = "SELECT id_categoria, nombre_categoria, descripcion, estado FROM categorias WHERE id_categoria = ?";
+            $sql = "SELECT id_categoria, nombre_categoria, descripcion FROM categorias WHERE id_categoria = ?";
             $request = $this->select($sql, [$id_categoria]);
             return $request;
         }

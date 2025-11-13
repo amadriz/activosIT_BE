@@ -60,6 +60,19 @@
 
         if(is_array($arrData))
         {            
+            // Ensure CORS headers are maintained
+            $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+            
+            if (strpos($origin, 'supersaloncr.com') !== false || $origin === 'http://localhost:5173') {
+                header("Access-Control-Allow-Origin: " . $origin);
+            } else {
+                header("Access-Control-Allow-Origin: https://supersaloncr.com");
+            }
+            
+            header("Access-Control-Allow-Credentials: true");
+            header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin");
+            header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+            
             header("HTTP/1.1 ".$code);
             header("Content-Type: application/json");
             echo json_encode($arrData, true);
