@@ -22,13 +22,10 @@
             $sql = "SELECT 
                         COUNT(*) as total_activos,
                         COUNT(CASE WHEN e.nombre_estado = 'Disponible' THEN 1 END) as disponibles,
-                        COUNT(CASE WHEN e.nombre_estado = 'En préstamo' THEN 1 END) as en_prestamo,
-                        COUNT(CASE WHEN e.nombre_estado = 'En mantenimiento' THEN 1 END) as en_mantenimiento,
-                        COUNT(CASE WHEN e.nombre_estado = 'Dañado' THEN 1 END) as danados,
-                        COUNT(CASE WHEN e.nombre_estado = 'Baja' THEN 1 END) as dados_baja
+                        COUNT(CASE WHEN e.nombre_estado = 'En Mantenimiento' THEN 1 END) as en_mantenimiento,
+                        COUNT(CASE WHEN e.nombre_estado = 'No Disponible' THEN 1 END) as no_disponibles
                     FROM activos a
-                    LEFT JOIN estado_activos e ON a.id_estado = e.id_estado
-                    WHERE a.status = 1";
+                    LEFT JOIN estado_activos e ON a.id_estado = e.id_estado";
             
             return $this->select($sql);
         }
@@ -44,7 +41,6 @@
                         COUNT(*) as cantidad_agregada
                     FROM activos
                     WHERE fecha_registro >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-                    AND status = 1
                     GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m')
                     ORDER BY periodo";
             
@@ -62,13 +58,13 @@
         {
             $sql = "SELECT 
                         COUNT(*) as total_prestamos,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Aprobado' AND p.fecha_devolucion IS NULL THEN 1 END) as activos,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Pendiente' THEN 1 END) as pendientes_aprobacion,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 END) as rechazados,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Completado' THEN 1 END) as completados
-                    FROM prestamos p
-                    LEFT JOIN estado_prestamos ep ON p.id_estado_prestamo = ep.id_estado_prestamo
-                    WHERE p.status = 1";
+                        SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
+                        SUM(CASE WHEN ep.nombre_estado = 'Entregado' THEN 1 ELSE 0 END) as entregados,
+                        SUM(CASE WHEN ep.nombre_estado = 'Solicitado' THEN 1 ELSE 0 END) as solicitados,
+                        SUM(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 ELSE 0 END) as rechazados,
+                        SUM(CASE WHEN ep.nombre_estado = 'Devuelto' THEN 1 ELSE 0 END) as devueltos
+                    FROM prestamo p
+                    LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo";
             
             return $this->select($sql);
         }
@@ -80,13 +76,16 @@
         {
             $sql = "SELECT 
                         COUNT(*) as total_solicitudes,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 END) as aprobados,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 END) as rechazados,
-                        ROUND((COUNT(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 END) * 100.0 / COUNT(*)), 2) as tasa_aprobacion
-                    FROM prestamos p
-                    LEFT JOIN estado_prestamos ep ON p.id_estado_prestamo = ep.id_estado_prestamo
-                    WHERE p.status = 1
-                    AND ep.nombre_estado IN ('Aprobado', 'Rechazado')";
+                        SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
+                        SUM(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 ELSE 0 END) as rechazados,
+                        CASE 
+                            WHEN COUNT(*) > 0 THEN 
+                                ROUND((SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2)
+                            ELSE 0 
+                        END as tasa_aprobacion
+                    FROM prestamo p
+                    LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo
+                    WHERE ep.nombre_estado IN ('Aprobado', 'Rechazado')";
             
             return $this->select($sql);
         }
@@ -107,11 +106,11 @@
                         u.rol,
                         COUNT(p.id_prestamo) as total_prestamos,
                         COUNT(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 END) as prestamos_aprobados,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Pendiente' THEN 1 END) as prestamos_pendientes,
+                        COUNT(CASE WHEN ep.nombre_estado = 'Solicitado' THEN 1 END) as prestamos_pendientes,
                         MAX(p.fecha_solicitud) as ultima_solicitud
                     FROM usuario u
-                    LEFT JOIN prestamos p ON u.id_usuario = p.id_usuario_solicitante AND p.status = 1
-                    LEFT JOIN estado_prestamos ep ON p.id_estado_prestamo = ep.id_estado_prestamo
+                    LEFT JOIN prestamo p ON u.id_usuario = p.id_usuario
+                    LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo
                     WHERE u.status = 1
                     GROUP BY u.id_usuario
                     HAVING total_prestamos > 0
@@ -130,9 +129,9 @@
                         u.rol,
                         COUNT(*) as cantidad_usuarios,
                         ROUND((COUNT(*) * 100.0 / (SELECT COUNT(*) FROM usuario WHERE status = 1)), 2) as porcentaje,
-                        COUNT(CASE WHEN p.id_prestamo IS NOT NULL THEN 1 END) as usuarios_con_prestamos
+                        COUNT(DISTINCT p.id_usuario) as usuarios_con_prestamos
                     FROM usuario u
-                    LEFT JOIN prestamos p ON u.id_usuario = p.id_usuario_solicitante AND p.status = 1
+                    LEFT JOIN prestamo p ON u.id_usuario = p.id_usuario
                     WHERE u.status = 1
                     GROUP BY u.rol
                     ORDER BY cantidad_usuarios DESC";
@@ -156,17 +155,16 @@
                         c.nombre_categoria as categoria,
                         m.nombre_marca as marca,
                         COUNT(p.id_prestamo) as total_prestamos,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Completado' THEN 1 END) as prestamos_completados,
-                        COUNT(CASE WHEN ep.nombre_estado = 'Aprobado' AND p.fecha_devolucion IS NULL THEN 1 END) as prestamos_activos,
+                        COUNT(CASE WHEN ep.nombre_estado = 'Devuelto' THEN 1 END) as prestamos_completados,
+                        COUNT(CASE WHEN ep.nombre_estado IN ('Aprobado', 'Entregado') THEN 1 END) as prestamos_activos,
                         MAX(p.fecha_solicitud) as ultimo_prestamo,
                         AVG(CASE WHEN p.fecha_entrega IS NOT NULL AND p.fecha_devolucion IS NOT NULL 
                             THEN TIMESTAMPDIFF(HOUR, p.fecha_entrega, p.fecha_devolucion) END) as promedio_horas_uso
                     FROM activos a
-                    LEFT JOIN prestamos p ON a.id_activo = p.id_activo AND p.status = 1
-                    LEFT JOIN estado_prestamos ep ON p.id_estado_prestamo = ep.id_estado_prestamo
+                    LEFT JOIN prestamo p ON a.id_activo = p.id_activo
+                    LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo
                     LEFT JOIN categorias c ON a.id_categoria = c.id_categoria
                     LEFT JOIN marca m ON a.id_marca = m.id_marca
-                    WHERE a.status = 1
                     GROUP BY a.id_activo
                     HAVING total_prestamos > 0
                     ORDER BY total_prestamos DESC
