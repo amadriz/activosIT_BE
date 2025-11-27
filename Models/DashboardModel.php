@@ -27,7 +27,7 @@
                     FROM activos a
                     LEFT JOIN estado_activos e ON a.id_estado = e.id_estado";
             
-            return $this->select($sql);
+            return $this->select($sql, []);
         }
 
         /**
@@ -44,7 +44,7 @@
                     GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m')
                     ORDER BY periodo";
             
-            return $this->select_all($sql);
+            return $this->select_all($sql, []);
         }
 
         // =======================================
@@ -56,17 +56,40 @@
          */
         public function getPrestamosResumen()
         {
-            $sql = "SELECT 
-                        COUNT(*) as total_prestamos,
-                        SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
-                        SUM(CASE WHEN ep.nombre_estado = 'Entregado' THEN 1 ELSE 0 END) as entregados,
-                        SUM(CASE WHEN ep.nombre_estado = 'Solicitado' THEN 1 ELSE 0 END) as solicitados,
-                        SUM(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 ELSE 0 END) as rechazados,
-                        SUM(CASE WHEN ep.nombre_estado = 'Devuelto' THEN 1 ELSE 0 END) as devueltos
-                    FROM prestamo p
-                    LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo";
-            
-            return $this->select($sql);
+            try {
+                // Primero, probemos una consulta simple
+                $testSql = "SELECT COUNT(*) as count FROM prestamo";
+                $testResult = $this->select($testSql, []);
+                
+                if (!$testResult) {
+                    error_log("Error: No se pudo ejecutar consulta básica en tabla prestamo");
+                    return ['error' => 'No se pudo acceder a la tabla prestamo', 'test_result' => false];
+                }
+                
+                $sql = "SELECT 
+                            COUNT(*) as total_prestamos,
+                            SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
+                            SUM(CASE WHEN ep.nombre_estado = 'Entregado' THEN 1 ELSE 0 END) as entregados,
+                            SUM(CASE WHEN ep.nombre_estado = 'Solicitado' THEN 1 ELSE 0 END) as solicitados,
+                            SUM(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 ELSE 0 END) as rechazados,
+                            SUM(CASE WHEN ep.nombre_estado = 'Devuelto' THEN 1 ELSE 0 END) as devueltos
+                        FROM prestamo p
+                        LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo";
+                
+                error_log("Ejecutando SQL: " . $sql);
+                $result = $this->select($sql, []);
+                
+                if (!$result) {
+                    error_log("Error ejecutando consulta de préstamos resumen");
+                    return ['error' => 'Error en consulta SQL', 'sql' => $sql, 'test_count' => $testResult['count']];
+                }
+                
+                return $result;
+                
+            } catch (Exception $e) {
+                error_log("Exception en getPrestamosResumen: " . $e->getMessage());
+                return ['error' => $e->getMessage(), 'method' => 'getPrestamosResumen'];
+            }
         }
 
         /**
@@ -74,20 +97,49 @@
          */
         public function getTasaAprobacionPrestamos()
         {
-            $sql = "SELECT 
-                        COUNT(*) as total_solicitudes,
-                        SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
-                        SUM(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 ELSE 0 END) as rechazados,
-                        CASE 
-                            WHEN COUNT(*) > 0 THEN 
-                                ROUND((SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) * 100.0 / COUNT(*)), 2)
-                            ELSE 0 
-                        END as tasa_aprobacion
-                    FROM prestamo p
-                    LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo
-                    WHERE ep.nombre_estado IN ('Aprobado', 'Rechazado')";
-            
-            return $this->select($sql);
+            try {
+                // Primero verificar que las tablas existan
+                $testSql = "SELECT ep.nombre_estado, COUNT(*) as count 
+                           FROM prestamo p 
+                           LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo 
+                           GROUP BY ep.nombre_estado";
+                
+                error_log("Test SQL para tasa de aprobación: " . $testSql);
+                $testResult = $this->select_all($testSql, []);
+                
+                if (!$testResult) {
+                    return ['error' => 'No se pudo ejecutar consulta de test', 'sql' => $testSql];
+                }
+                
+                // Consulta principal simplificada
+                $sql = "SELECT 
+                            COUNT(*) as total_solicitudes,
+                            SUM(CASE WHEN ep.nombre_estado = 'Aprobado' THEN 1 ELSE 0 END) as aprobados,
+                            SUM(CASE WHEN ep.nombre_estado = 'Rechazado' THEN 1 ELSE 0 END) as rechazados
+                        FROM prestamo p
+                        LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo
+                        WHERE ep.nombre_estado IN ('Aprobado', 'Rechazado')";
+                
+                error_log("Ejecutando SQL tasa aprobación: " . $sql);
+                $result = $this->select($sql, []);
+                
+                if (!$result) {
+                    return ['error' => 'Error en consulta principal', 'test_states' => $testResult];
+                }
+                
+                // Calcular tasa de aprobación
+                if ($result['total_solicitudes'] > 0) {
+                    $result['tasa_aprobacion'] = round(($result['aprobados'] * 100.0 / $result['total_solicitudes']), 2);
+                } else {
+                    $result['tasa_aprobacion'] = 0;
+                }
+                
+                return $result;
+                
+            } catch (Exception $e) {
+                error_log("Exception en getTasaAprobacionPrestamos: " . $e->getMessage());
+                return ['error' => $e->getMessage(), 'method' => 'getTasaAprobacionPrestamos'];
+            }
         }
 
         // =======================================
@@ -117,7 +169,7 @@
                     ORDER BY total_prestamos DESC
                     LIMIT $limite";
             
-            return $this->select_all($sql);
+            return $this->select_all($sql, []);
         }
 
         /**
@@ -136,7 +188,7 @@
                     GROUP BY u.rol
                     ORDER BY cantidad_usuarios DESC";
             
-            return $this->select_all($sql);
+            return $this->select_all($sql, []);
         }
 
         // =======================================
@@ -170,7 +222,7 @@
                     ORDER BY total_prestamos DESC
                     LIMIT $limite";
             
-            return $this->select_all($sql);
+            return $this->select_all($sql, []);
         }
     }
 

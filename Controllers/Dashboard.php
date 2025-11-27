@@ -45,8 +45,22 @@
          */
         public function prestamosResumen()
         {
-            $arrData = $this->model->getPrestamosResumen();
-            echo json_encode($arrData, JSON_UNESCAPED_UNICODE);
+            try {
+                error_log("Iniciando prestamosResumen()");
+                $arrData = $this->model->getPrestamosResumen();
+                error_log("Resultado prestamosResumen: " . json_encode($arrData));
+                
+                if (isset($arrData['error'])) {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Error interno', 'debug' => $arrData], JSON_UNESCAPED_UNICODE);
+                } else {
+                    echo json_encode($arrData, JSON_UNESCAPED_UNICODE);
+                }
+            } catch (Exception $e) {
+                error_log("Exception en prestamosResumen: " . $e->getMessage());
+                http_response_code(500);
+                echo json_encode(['error' => 'Exception capturada', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+            }
             die();
         }
 
@@ -56,8 +70,22 @@
          */
         public function prestamosTasaAprobacion()
         {
-            $arrData = $this->model->getTasaAprobacionPrestamos();
-            echo json_encode($arrData, JSON_UNESCAPED_UNICODE);
+            try {
+                error_log("Iniciando prestamosTasaAprobacion()");
+                $arrData = $this->model->getTasaAprobacionPrestamos();
+                error_log("Resultado prestamosTasaAprobacion: " . json_encode($arrData));
+                
+                if (isset($arrData['error'])) {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Error interno', 'debug' => $arrData], JSON_UNESCAPED_UNICODE);
+                } else {
+                    echo json_encode($arrData, JSON_UNESCAPED_UNICODE);
+                }
+            } catch (Exception $e) {
+                error_log("Exception en prestamosTasaAprobacion: " . $e->getMessage());
+                http_response_code(500);
+                echo json_encode(['error' => 'Exception capturada', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+            }
             die();
         }
 
