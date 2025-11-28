@@ -133,6 +133,23 @@
             echo json_encode($arrData, JSON_UNESCAPED_UNICODE);
             die();
         }
+
+        // =======================================
+        // ENDPOINTS PARA RANKING DE USUARIOS
+        // =======================================
+        
+        /**
+         * GET /dashboard/calificaciones/ranking-usuarios?limite=10
+         * Ranking de usuarios mejor calificados
+         */
+        public function calificacionesRankingUsuarios()
+        {
+            $limite = $_GET['limite'] ?? 10;
+            $limite = intval($limite);
+            $arrData = $this->model->getRankingUsuariosPorCalificacion($limite);
+            echo json_encode($arrData, JSON_UNESCAPED_UNICODE);
+            die();
+        }
     }
 
 ?>

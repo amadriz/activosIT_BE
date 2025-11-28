@@ -224,6 +224,40 @@
             
             return $this->select_all($sql, []);
         }
+
+        // =======================================
+        // 5. RANKING DE USUARIOS
+        // =======================================
+        
+        /**
+         * Obtiene el ranking de usuarios por mejor calificación promedio
+         */
+        public function getRankingUsuariosPorCalificacion($limite = 10)
+        {
+            $sql = "SELECT 
+                        u.id_usuario,
+                        CONCAT(u.nombre, ' ', u.apellido) as usuario,
+                        u.email,
+                        u.rol,
+                        COUNT(p.id_prestamo) as total_prestamos,
+                        COUNT(CASE WHEN p.calificacion_prestamo IS NOT NULL THEN 1 END) as prestamos_calificados,
+                        AVG(p.calificacion_prestamo) as calificacion_promedio,
+                        MIN(p.calificacion_prestamo) as calificacion_minima,
+                        MAX(p.calificacion_prestamo) as calificacion_maxima,
+                        COUNT(CASE WHEN p.calificacion_prestamo >= 8 THEN 1 END) as calificaciones_excelentes
+                    FROM usuario u
+                    INNER JOIN prestamo p ON u.id_usuario = p.id_usuario
+                    LEFT JOIN estado_prestamo ep ON p.id_estado_prestamo = ep.id_estado_prestamo
+                    WHERE u.status = 1 
+                    AND p.calificacion_prestamo IS NOT NULL
+                    AND ep.nombre_estado = 'Devuelto'
+                    GROUP BY u.id_usuario
+                    HAVING prestamos_calificados >= 2
+                    ORDER BY calificacion_promedio DESC, prestamos_calificados DESC
+                    LIMIT $limite";
+            
+            return $this->select_all($sql, []);
+        }
     }
 
 ?>
